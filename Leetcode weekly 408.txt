@@ -1,0 +1,79 @@
+class Solution {
+public:
+    bool seek(vector<vector<int>>& graph, vector<bool>& travelled, int cur, int des1, int des2)
+    {
+        for(auto it: graph[cur])
+        {
+            if(it == des1 || it == des2) return true;
+
+            if(!travelled[it])
+
+            {
+                travelled[it] = true;
+                auto res1 = seek(graph, travelled, it, des1, des2);
+                if(res1)
+                    return true;
+            }
+        }
+        return false;
+    }
+
+    bool canReachCorner(int X, int Y, vector<vector<int>>& circles) {
+        int len = circles.size();
+        vector<vector<int>> graph(len + 4);
+        for(int i = 0;i < len; ++i)
+        {
+            for(int j = i + 1;j < len;++j)
+            {
+                long long diffx = circles[i][0] - circles[j][0];
+                diffx *= diffx;
+                long long diffy = circles[i][1] - circles[j][1];
+                diffy *= diffy;
+                long long totalR = circles[i][2] + circles[j][2];
+                totalR *= totalR;
+                if(diffx + diffy <= totalR)
+                {
+                    graph[i].push_back(j);
+                    graph[j].push_back(i);
+                }
+            }
+
+            if(circles[i][0] <= circles[i][2])
+            {
+                graph[i].push_back(len);
+                graph[len].push_back(i);
+            }
+
+            if(circles[i][1] <= circles[i][2])
+            {
+                graph[i].push_back(len + 1);
+                graph[len + 1].push_back(i);
+            }
+
+            if(circles[i][0] + circles[i][2] >= X)
+            {
+                graph[i].push_back(len + 2);
+                graph[len + 2].push_back(i);
+
+            }
+
+            if(circles[i][1] + circles[i][2] >= Y)
+            {
+                graph[i].push_back(len + 3);
+                graph[len + 3].push_back(i);
+            }
+        }
+
+        vector<bool> travelled(len + 2, false);
+        travelled[len] = true;
+        if(seek(graph, travelled, len, len + 1, len + 2))
+            return false;
+
+        travelled.assign(len + 2, false);
+        travelled[len] = true;
+        if(seek(graph, travelled, len + 3, len + 1, len + 2))
+            return false;
+
+        return true;
+    }
+};
