@@ -70,7 +70,7 @@ public:
             return false;
 
         travelled.assign(len + 2, false);
-        travelled[len] = true;
+        travelled[len + 3] = true;
         if(seek(graph, travelled, len + 3, len + 1, len + 2))
             return false;
 
