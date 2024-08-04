@@ -1,0 +1,43 @@
+Question 3:
+class Solution {
+public:
+    vector<int> shortestDistanceAfterQueries(int n, vector<vector<int>>& queries) {
+        set<pair<int, int>> path;
+        for (int i = 1; i < n; ++i)
+        {
+            path.insert({ i - 1,i });
+        }
+        int resval = n - 1;
+        vector<int> ret;
+
+        for (auto& it : queries)
+        {
+            auto res = path.lower_bound({ it[0], it[0] - 1 });
+            if (res == path.end())
+            {
+                ret.push_back(resval);
+            }
+            else
+            {
+                bool inserted = false;
+                while (res != path.end() && res->second <= it[1])
+                {
+                    inserted = true;
+                    resval -= 1;
+                    auto temp = res;
+                    ++res;
+                    path.erase(temp);
+                }
+                if (inserted)
+                {
+                    path.insert({ it[0], it[1] });
+                    resval += 1;
+                }
+                ret.push_back(resval);
+            }
+        }
+        return ret;
+    }
+};
+
+Question 4: Update later
