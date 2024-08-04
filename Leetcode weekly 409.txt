@@ -40,4 +40,435 @@ public:
     }
 };
 
-Question 4: Update later
+
+
+
+Question 4:
+
+class SegTree
+{
+public:
+    unique_ptr<int[]> _heap = nullptr;
+    int org_len = 0;
+    int offset = 0;
+
+
+    int index_init(int indx)
+    {
+        return 0;
+    }
+
+    int init_seg_tree(int n, int data)
+    {
+        int len = 1;
+        while (len < n)
+        {
+            len <<= 1;
+        }
+        len <<= 1;
+
+        org_len = len;
+        offset = len / 2;
+
+        _heap = make_unique<int[]>(len);
+        _heap[0] = 0;
+        //fill(_heap.get(), _heap.get() + len, data);
+        {
+            int i = len / 2;
+            int realn = n + i;
+            for (; i < realn; ++i)
+            {
+                _heap[i] = index_init(i - len / 2);
+            }
+
+            for (; i < len; ++i)
+            {
+                _heap[i] = 0;
+            }
+        }
+
+        while (len > 2)
+        {
+            for (int i = len / 2; i < len; i += 2)
+            {
+                _heap[i / 2] = _heap[i] + _heap[i + 1];
+            }
+            len >>= 1;
+        }
+
+        return 0;
+    }
+
+    int print_out()
+    {
+        for (int i = 0; i < org_len; ++i)
+        {
+            cout << _heap[i] << " ";
+        }
+        cout << endl;
+        return 0;
+    }
+
+    int update(int indx, int val)
+    {
+        int real_indx = offset + indx;
+        int diff = val - _heap[real_indx];
+        _heap[real_indx] = val;
+        while (real_indx >= 2)
+        {
+            real_indx >>= 1;
+            _heap[real_indx] += diff;
+        }
+        return 0;
+    }
+
+    int updatediff(int indx, int diff)
+    {
+        int real_indx = offset + indx;
+        _heap[real_indx] += diff;
+        while (real_indx >= 2)
+        {
+            real_indx >>= 1;
+            _heap[real_indx] += diff;
+        }
+        return 0;
+    }
+
+    int query_org(int indx)
+    {
+        if (indx < 0)
+            return 0;
+        indx += offset;
+        int ret = _heap[1];
+        while (indx > 1)
+        {
+            if ((indx & 1) == 0)
+            {
+                ret -= _heap[indx + 1];
+            }
+            indx >>= 1;
+        }
+        return ret;
+    }
+
+    int query(int start, int end)
+    {
+        if (start >= end)
+            return 0;
+        return query_org(end - 1) - query_org(start - 1);
+    }
+};
+
+class CircularRing
+{
+private:
+    SegTree _multiple;
+    SegTree _count;
+public:
+    int init_ranges(vector<int>& colors, set<pair<int, int>>& alter)
+    {
+        int len = colors.size();
+        _multiple.init_seg_tree(len + 1, 0);
+        _count.init_seg_tree(len + 1, 0);
+        int start = 0;
+        while (start < len)
+        {
+            if (colors[(start - 1 + len) % len] == colors[start])
+            {
+                break;
+            }
+            ++start;
+        }
+        if (start >= len)
+        {
+            alter.insert({ 0, len + 1 });
+            return 0;
+        }
+
+        int lm = start + len;
+        while (start < lm)
+        {
+            int i = start + 1;
+            while (colors[i % len] != colors[(i - 1) % len])
+            {
+                ++i;
+            }
+            alter.insert({ start, i });
+            _multiple.updatediff(i - start, i - start);
+            _count.updatediff(i - start, 1);
+            start = i;
+        }
+
+        return 0;
+    }
+
+    auto check(set<pair<int, int>>& alter, int indx)
+    {
+        if (alter.empty())
+            return alter.end();
+        if (alter.begin()->first > indx)
+            return alter.end();
+        auto res = alter.upper_bound({ indx, indx });
+
+        if (res == alter.begin())
+        {
+            if (res->first == indx)
+                return res;
+            else
+                return alter.end();
+        }
+        else
+        {
+            if (res != alter.end() && res->first == indx)
+                return res;
+            --res;
+            if (res->second > indx)
+                return res;
+            else
+                return alter.end();
+        }
+    }
+
+    int update(int index, int color, vector<int>& colors, set<pair<int, int>>& alter)
+    {
+        if (colors[index] == color)
+            return 0;
+        colors[index] = color;
+        int len = colors.size();
+        auto res = check(alter, index);
+        if (res == alter.end())
+        {
+            index += len;
+            res = check(alter, index);
+        }
+
+        auto nPa = *res;
+        auto next = res;
+        ++next;
+        alter.erase(res);
+        if (nPa.second - nPa.first <= len)
+        {
+            _multiple.updatediff(nPa.second - nPa.first, -(nPa.second - nPa.first));
+            _count.updatediff(nPa.second - nPa.first, -1);
+        }
+        if (alter.empty())
+        {
+            if (nPa.second - nPa.first > len)
+            {
+                pair<int, int> nPa1 = { index, index + 1 };
+                pair<int, int> nPa2 = { index + 1, index + len };
+                if (nPa1.first >= len)
+                {
+                    nPa1.first -= len;
+                    nPa1.second -= len;
+                }
+                if (nPa2.first >= len)
+                {
+                    nPa2.first -= len;
+                    nPa2.second -= len;
+                }
+                alter.insert(nPa1);
+                alter.insert(nPa2);
+                _multiple.updatediff(nPa1.second - nPa1.first, nPa1.second - nPa1.first);
+                _count.updatediff(nPa1.second - nPa1.first, 1);
+                _multiple.updatediff(nPa2.second - nPa2.first, nPa2.second - nPa2.first);
+                _count.updatediff(nPa2.second - nPa2.first, 1);
+            }
+            else if (nPa.first == index)
+            {
+                ++nPa.first;
+                ++nPa.second;
+                if (nPa.first >= len)
+                {
+                    nPa.first -= len;
+                    nPa.second -= len;
+                }
+                alter.insert(nPa);
+                _multiple.updatediff(nPa.second - nPa.first, nPa.second - nPa.first);
+                _count.updatediff(nPa.second - nPa.first, 1);
+            }
+            else if (nPa.second - 1 == index)
+            {
+                --nPa.first;
+                --nPa.second;
+                if (nPa.first < 0)
+                {
+                    nPa.first += len;
+                    nPa.second += len;
+                }
+                alter.insert(nPa);
+                _multiple.updatediff(nPa.second - nPa.first, nPa.second - nPa.first);
+                _count.updatediff(nPa.second - nPa.first, 1);
+            }
+            else
+            {
+                pair<int, int> nPa1 = { nPa.first, index };
+                pair<int, int> nPa2 = { index, index + 1 };
+                pair<int, int> nPa3 = { index + 1, nPa.second };
+                if (nPa2.first >= len)
+                {
+                    nPa2.first -= len;
+                    nPa2.second -= len;
+                }
+                if (nPa3.first >= len)
+                {
+                    nPa3.first -= len;
+                    nPa3.second -= len;
+                }
+                alter.insert(nPa1);
+                alter.insert(nPa2);
+                alter.insert(nPa3);
+                _multiple.updatediff(nPa1.second - nPa1.first, nPa1.second - nPa1.first);
+                _count.updatediff(nPa1.second - nPa1.first, 1);
+                _multiple.updatediff(nPa2.second - nPa2.first, nPa2.second - nPa2.first);
+                _count.updatediff(nPa2.second - nPa2.first, 1);
+                _multiple.updatediff(nPa3.second - nPa3.first, nPa3.second - nPa3.first);
+                _count.updatediff(nPa3.second - nPa3.first, 1);
+            }
+        }
+        else
+        {
+            auto prev = next;
+            if (next == alter.end())
+                next = alter.begin();
+            if (prev == alter.begin())
+                prev = alter.end();
+            --prev;
+            auto nextPa = *next;
+            auto prevPa = *prev;
+            if (nPa.second - nPa.first == 1)
+            {
+                if (alter.size() == 1)
+                {
+                    alter.clear();
+                    _multiple.updatediff(prevPa.second - prevPa.first, -(prevPa.second - prevPa.first));
+                    _count.updatediff(prevPa.second - prevPa.first, -1);
+                    alter.insert({ 0, len + 1 });
+                }
+                else
+                {
+                    alter.erase(prev);
+                    alter.erase(next);
+                    _multiple.updatediff(prevPa.second - prevPa.first, -(prevPa.second - prevPa.first));
+                    _count.updatediff(prevPa.second - prevPa.first, -1);
+                    _multiple.updatediff(nextPa.second - nextPa.first, -(nextPa.second - nextPa.first));
+                    _count.updatediff(nextPa.second - nextPa.first, -1);
+                    prevPa.second += 1 + nextPa.second - nextPa.first;
+                    alter.insert(prevPa);
+                    _multiple.updatediff(prevPa.second - prevPa.first, prevPa.second - prevPa.first);
+                    _count.updatediff(prevPa.second - prevPa.first, 1);
+
+                }
+            }
+            else if (nPa.first == index)
+            {
+                alter.erase(prev);
+                _multiple.updatediff(prevPa.second - prevPa.first, -(prevPa.second - prevPa.first));
+                _count.updatediff(prevPa.second - prevPa.first, -1);
+                prevPa.second += 1;
+                ++nPa.first;
+                if (nPa.first >= len)
+                {
+                    nPa.first -= len;
+                    nPa.second -= len;
+                }
+                alter.insert(prevPa);
+                _multiple.updatediff(prevPa.second - prevPa.first, prevPa.second - prevPa.first);
+                _count.updatediff(prevPa.second - prevPa.first, 1);
+                alter.insert(nPa);
+                _multiple.updatediff(nPa.second - nPa.first, nPa.second - nPa.first);
+                _count.updatediff(nPa.second - nPa.first, 1);
+            }
+            else if (nPa.second - 1 == index)
+            {
+                alter.erase(next);
+                _multiple.updatediff(nextPa.second - nextPa.first, -(nextPa.second - nextPa.first));
+                _count.updatediff(nextPa.second - nextPa.first, -1);
+                --nextPa.first;
+                if (nextPa.first < 0)
+                {
+                    nextPa.first += len;
+                    nextPa.second += len;
+                }
+                --nPa.second;
+                alter.insert(nextPa);
+                _multiple.updatediff(nextPa.second - nextPa.first, nextPa.second - nextPa.first);
+                _count.updatediff(nextPa.second - nextPa.first, 1);
+                alter.insert(nPa);
+                _multiple.updatediff(nPa.second - nPa.first, nPa.second - nPa.first);
+                _count.updatediff(nPa.second - nPa.first, 1);
+            }
+            else
+            {
+                pair<int, int> nPa1 = { nPa.first, index };
+                pair<int, int> nPa2 = { index, index + 1 };
+                pair<int, int> nPa3 = { index + 1, nPa.second };
+                if (nPa2.first >= len)
+                {
+                    nPa2.first -= len;
+                    nPa2.second -= len;
+                }
+                if (nPa3.first >= len)
+                {
+                    nPa3.first -= len;
+                    nPa3.second -= len;
+                }
+                alter.insert(nPa1);
+                alter.insert(nPa2);
+                alter.insert(nPa3);
+                _multiple.updatediff(nPa1.second - nPa1.first, nPa1.second - nPa1.first);
+                _count.updatediff(nPa1.second - nPa1.first, 1);
+                _multiple.updatediff(nPa2.second - nPa2.first, nPa2.second - nPa2.first);
+                _count.updatediff(nPa2.second - nPa2.first, 1);
+                _multiple.updatediff(nPa3.second - nPa3.first, nPa3.second - nPa3.first);
+                _count.updatediff(nPa3.second - nPa3.first, 1);
+            }
+        }
+
+
+        return 0;
+    }
+
+    int query(int size, set<pair<int, int>>& alter, vector<int>& colors)
+    {
+        int len = colors.size();
+        if (alter.size() == 1)
+        {
+            if (alter.begin()->second - alter.begin()->first > len)
+            {
+                return len;
+            }
+            else
+            {
+                return len + 1 - size;
+            }
+        }
+        int mul = _multiple.query(size, len + 1);
+        int count = _count.query(size, len + 1);
+        return mul - count * (size - 1);
+    }
+
+};
+
+class Solution {
+public:
+    vector<int> numberOfAlternatingGroups(vector<int>& colors, vector<vector<int>>& queries) {
+        set<pair<int, int>> alter;
+        vector<int> ret;
+        CircularRing ring;
+        ring.init_ranges(colors, alter);
+        for (auto& it : queries)
+        {
+            if (it[0] == 2)
+            {
+                ring.update(it[1], it[2], colors, alter);
+            }
+            else
+            {
+                ret.push_back(ring.query(it[1], alter, colors));
+            }
+        }
+
+        return ret;
+    }
+};
