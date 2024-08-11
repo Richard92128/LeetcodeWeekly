@@ -1,0 +1,32 @@
+class Solution {
+public:
+    int countOfPairs(vector<int>& nums) {
+        if (nums.empty())
+            return 0;
+        vector<int> inc(1002, 0);
+        long long ret = 0;
+        for (int j = 0; j <= nums[0]; ++j)
+        {
+            inc[j] = j + 1;
+        }
+        for (int i = 1; i < nums.size(); ++i)
+        {
+            vector<int> inc2(1002, 0);
+            for (int j = 0; j <= nums[i]; ++j)
+            {
+                if (j > 0)
+                    inc2[j] = inc2[j - 1];
+                int ldown = nums[i - 1] - nums[i] + j;
+                if (ldown >= 0)
+                {
+                    inc2[j] += inc[min(j, ldown)];
+                    inc2[j] %= 1000000007;
+                }
+                else continue;
+            }
+            swap(inc, inc2);
+        }
+
+        return inc[nums.back()];
+    }
+};
