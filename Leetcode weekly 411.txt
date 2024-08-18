@@ -1,0 +1,250 @@
+Question 3:
+class Solution {
+public:
+    string largestPalindrome(int n, int k) {
+        string ret;
+        if(k == 7)
+        {
+            if(n == 1)
+                return "7";
+            if(n == 2)
+                return "77";
+            vector<int> mods(n, 0);
+            mods[0] = 1;
+            int num = 1;
+            for(int i = 1; i < n;++i)
+            {
+                num *= 10;
+                num %= k;
+                mods[i] = num;
+            }
+            int lm = n % 2 == 0 ? n/2 - 1: n/2;
+            int smod = 0;
+            for(int i = 0;i < lm;++i)
+            {
+                int mod = mods[n - 1 - i] * 9 + mods[i] * 9;
+                mod %= k;
+                smod += mod;
+                smod %= k;
+                ret.push_back('9');
+            }
+            smod = k - smod;
+            smod %= k;
+            int start = n % 2 == 0? 11 : 1;
+            for(int i = 0;i < lm;++i)
+            {
+                start *= 10;
+                start %= k;
+            }
+            for(int i = 9;i > 0;--i)
+            {
+                if((start * i) % k == smod)
+                {
+                    if(n % 2 == 0)
+                    {
+                        ret.push_back('0' + (char)i);
+                        ret.push_back('0' + (char)i);
+                    }
+                    else
+                        ret.push_back('0' + (char)i);
+                    break;
+                }
+            }
+            while(ret.length() < n)
+            {
+                int rev =  n - ret.length() - 1;
+                ret.push_back(ret[rev]);
+            }
+            return ret;
+        }
+        else if(k == 3 || k == 9 || k == 1)
+        {
+            for(int i = 0; i< n;++i)
+            {
+                ret.push_back('9');
+            }
+            return ret;
+        }
+        else if(k == 2)
+        {
+            if(n == 1)
+                return "8";
+            ret.push_back('8');
+            for(int i = 1; i < n - 1;++i)
+            {
+                ret.push_back('9');
+            }
+            ret.push_back('8');
+            return ret;
+        }
+        else if(k == 4)
+        {
+            if(n == 1)
+                return "8";
+            if(n == 2)
+                return "88";
+            if(n == 3)
+                return "888";
+            if(n == 4)
+                return "8888";
+            ret.push_back('8');
+            ret.push_back('8');
+            for(int i = 2; i < n - 2;++i)
+            {
+                ret.push_back('9');
+            }
+            ret.push_back('8');
+            ret.push_back('8');
+            return ret;
+        }
+        else if(k == 8)
+        {
+            if(n == 1)
+                return "8";
+            if(n == 2)
+                return "88";
+            if(n == 3)
+                return "888";
+            if(n == 4)
+                return "8888";
+            if(n == 5)
+                return "88888";
+            ret.push_back('8');
+            ret.push_back('8');
+            ret.push_back('8');
+            for(int i = 3; i < n - 3;++i)
+            {
+                ret.push_back('9');
+            }
+            ret.push_back('8');
+            ret.push_back('8');
+            ret.push_back('8');
+            return ret;
+        }
+        else if(k == 5)
+        {
+            if(n == 1)
+                return "5";
+            ret.push_back('5');
+            
+            for(int i = 1; i < n - 1;++i)
+            {
+                ret.push_back('9');
+            }
+            ret.push_back('5');
+            return ret;
+        }
+        else if(k == 6)
+        {
+            if(n == 1)
+                return "6";
+            if(n == 2)
+                return "66";
+            ret.push_back('8');
+            int lm = n % 2 == 0 ? n/2 - 1: n/2;
+            int smod = 1;
+            for(int i = 1;i < lm;++i)
+            {
+                smod += 18;
+                smod %= 3;
+                ret.push_back('9');
+            }
+            smod = 3 - smod;
+            smod %= 3;
+            int start = n % 2 == 0? 11 : 1;
+            start %= 3;
+            for(int i = 9;i > 0;--i)
+            {
+                if((start * i) % 3 == smod)
+                {
+                    if(n % 2 == 0)
+                    {
+                        ret.push_back('0' + (char)i);
+                        ret.push_back('0' + (char)i);
+                    }
+                    else
+                        ret.push_back('0' + (char)i);
+                    break;
+                }
+            }
+            while(ret.length() < n)
+            {
+                int rev =  n - ret.length() - 1;
+                ret.push_back(ret[rev]);
+            }
+            return ret;
+        }
+        return "";
+    }
+};
+
+Question 4:
+class Solution {
+public:
+    bool check(vector<int>& input, int start, int end, int k)
+    {
+        int one = start > 0 ? input[end - 1] - input[start - 1] : input[end - 1];
+        int len = end - start;
+        int zero = len - one;
+        if(one <= k || zero <= k)
+            return true;
+        return false;
+    }
+    int search(vector<int>& input, int start, int end, int k)
+    {
+        int org_end = end;
+        start -= 1;
+        end -= 1;
+        while(end - start > 1)
+        {
+            int mid = (end + start)/2;
+            if(check(input, mid, org_end, k))
+                end = mid;
+            else start = mid;
+        }
+        return end;
+    }
+    int rollCal(vector<int>& input, vector<long long>& output, int k)
+    {
+        int start = 0;
+        int end = 1;
+        while(start < input.size())
+        {
+            while(end <= input.size() && check(input, start, end, k))
+            {
+                ++end;
+            }
+            output[start] = end - start - 1;
+            ++start;
+        }
+        for(int i = (int)output.size() - 2;i >= 0;--i)
+        {
+            output[i] += output[i + 1];
+        }
+        return 0;
+    }
+    vector<long long> countKConstraintSubstrings(string s, int k, vector<vector<int>>& queries) {
+        vector<int> input(s.length(), 0);
+        vector<long long> output(s.length(), 0);
+        for(int i = 0;i < s.length();++i)
+        {
+            if(i > 0)
+                input[i] = input[i - 1];
+            if(s[i] == '1')
+            {
+                ++input[i];
+            }
+        }
+        
+        rollCal(input, output, k);
+        vector<long long> ret;
+        for(auto& it:queries)
+        {
+            int i = search(input, it[0], it[1] + 1, k);
+            long long last_len = it[1] - i + 1;
+            long long last = last_len % 2 == 0? last_len / 2 * (last_len + 1) : (last_len + 1) / 2 * last_len; 
+            ret.push_back(output[it[0]] - output[i] + last);
+        }
+        return ret;
+    }
+};
