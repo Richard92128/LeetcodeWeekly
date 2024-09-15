@@ -1,0 +1,103 @@
+struct AhoTrie {  // An one-use trie for the Aho-Corasick algorithm. Need to reset count to zero for all nodes to reuse
+    struct Node {
+        Node* link = 0;
+        std::vector<int> terminals;
+        std::map<char, Node*> arcs;
+
+        int count = 0;  // How many times reached in string
+        int back = -1;
+    };
+
+    std::deque<Node> nodes;  // We use deque to prevent pointer invalidation when capacity is exceeded
+    Node* root;
+    int num_terminals;
+    std::vector<Node*> terminal_nodes;
+
+    AhoTrie() {
+        nodes.resize(1);
+        root = &nodes[0];
+    }
+
+    void init(std::vector<std::string>& strs) {
+        // First initialize the Trie
+        num_terminals = strs.size();
+        for (int i = 0; i < (int)strs.size(); i++) {
+            std::string& str = strs[i];
+            Node* cur_node = root;
+            for (int j = 0; j < str.length();++j) {  // Add the string to the trie
+                char c = str[j];
+                if (cur_node->arcs.count(c) == 0) {
+                    nodes.push_back(Node());
+                    cur_node->arcs[c] = &nodes.back();
+                }
+                cur_node = cur_node->arcs[c];
+                cur_node->back = max(j, cur_node->back);
+            }
+            cur_node->terminals.push_back(i);
+            terminal_nodes.push_back(cur_node);  // Mark the node reached by this string as terminal
+        }
+
+        // Next initialize the links with BFS
+        std::vector<Node*> front;
+        for (std::pair<char, Node*> cp : root->arcs) {  // Process root separately
+            cp.second->link = root;
+            front.push_back(cp.second); // Initialize the queue
+        }
+        for (int i = 0; i < (int)front.size(); i++) {
+            Node* cur_node = front[i];
+            for (std::pair<char, Node*> cp : cur_node->arcs) {  // Iterate over all arcs
+                char c = cp.first;
+                Node* next = cp.second;
+                Node* link = cur_node->link;
+
+                while (link != 0 && link->arcs.count(c) == 0) {  // While we can't add c to suffix
+                    link = link->link;  // Move to smaller suffix
+                }
+                if (link == 0) link = root;  // Character not matched
+                else link = link->arcs[c];
+
+                next->link = link;
+                front.push_back(next);
+            }
+        }
+    }
+
+    int process_string(std::string s) {
+        Node* cur_node = root;
+        vector<int> dp(s.length(), -1);
+        for (int i = 0; i < s.length();++i) {
+            char c = s[i];
+            while (cur_node != 0 && cur_node->arcs.count(c) == 0) {  // If no arc allows for this character
+                cur_node = cur_node->link;  // Move to smaller suffix
+            }
+            if (cur_node == 0) cur_node = root;  // Character not matched
+            else cur_node = cur_node->arcs[c];
+
+            //cur_node->count++;
+            if (cur_node->back == -1)
+                return -1;
+            else
+            {
+                if (cur_node->back == i)
+                {
+                    dp[i] = 1;
+                }
+                else
+                {
+                    dp[i] = dp[i - cur_node->back - 1] + 1;
+                }
+            }
+        }
+        return dp.back();
+    }
+};
+
+class Solution {
+public:
+    int minValidStrings(vector<string>& words, string target) {
+        AhoTrie trie;
+        trie.init(words);
+        auto result = trie.process_string(target);
+        return result;
+    }
+};
