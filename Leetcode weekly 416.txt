@@ -1,0 +1,37 @@
+long long validSubstringCount(string word1, string word2) {
+        unordered_map<char, int> m;
+        int count_map = word2.size();
+        int indx = 0;
+        int indx2 = 0;
+        for (auto it : word2)
+        {
+            m[it]++;
+        }
+        long long ret = 0;
+        while (indx < word1.size())
+        {
+            while (indx2 < word1.size() && count_map > 0)
+            {
+                if (m.count(word1[indx2]))
+                {
+                    int& cnt = m[word1[indx2]];
+                    cnt--;
+                    if (cnt >= 0)
+                        count_map--;
+                }
+                indx2++;
+            }
+            if (count_map > 0)
+                return ret;
+            ret += word1.size() - indx2 + 1;
+            if (m.count(word1[indx]))
+            {
+                m[word1[indx]]++;
+                if (m[word1[indx]] > 0)
+                    count_map++;
+            }
+            ++indx;
+        }
+        return ret;
+
+    }
