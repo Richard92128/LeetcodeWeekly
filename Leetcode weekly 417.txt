@@ -1,0 +1,40 @@
+static map<long long, int> po;
+static long long lm = 100000000000000;
+class Solution {
+public:
+    char search(long long k, vector<int>& operations)
+    {
+        if (k == 0)
+            return 'a';
+        auto res = po.upper_bound(k);
+        --res;
+        long long new_k = k - res->first;
+        char res2 = search(new_k, operations);
+        if (operations[res->second] == 0)
+        {
+            return res2;
+        }
+        else
+        {
+            ++res2;
+            if (res2 > 'z')
+                res2 = 'a';
+            return res2;
+        }
+    }
+    char kthCharacter(long long k, vector<int>& operations) {
+        if (po.empty())
+        {
+            long long current = 1;
+            po[1] = 0;
+            int count = 0;
+            while (current < lm)
+            {
+                current <<= 1;
+                ++count;
+                po[current] = count;
+            }
+        }
+        return search(k - 1, operations);
+    }
+};
