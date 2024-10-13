@@ -1,0 +1,103 @@
+last problem:
+class Solution {
+public:
+    vector<long long> findXSum(vector<int>& nums, int k, int x) {
+        auto cmp = [](const pair<int, int>& a, const pair<int, int>& b){
+           if(a.first < b.first)
+                return true;
+            if(a.first > b.first)
+                return false;
+           return a.second < b.second;
+        };
+        set<pair<int, int>, decltype(cmp)> m(cmp);
+        set<pair<int, int>, decltype(cmp)> m3(cmp);
+        map<int, int> m2;
+        for(int i = 0;i < k;++i)
+        {
+            m2[nums[i]]++;
+        }
+        for(auto& it:m2)
+        {
+            m.insert({it.second, it.first});
+        }
+        while(m.size() > x)
+        {
+            m3.insert(*m.begin());
+            m.erase(m.begin());
+        }
+        vector<long long> ret(nums.size() - k + 1, 0);
+        for(auto& it:m)
+        {
+            ret[0] += (long long)it.first * it.second;
+        }
+
+        for(int i = k;i < nums.size();++i)
+        {
+            int first_indx = i - k;
+            ret[first_indx + 1] = ret[first_indx];
+            if(nums[first_indx] == nums[i])
+            {
+                continue;
+            }
+            int count_first = m2[nums[first_indx]];
+            int count_last = m2[nums[i]];
+            m2[nums[first_indx]]--;
+            m2[nums[i]]++;
+            pair<int ,int> last_first = {count_first, nums[first_indx]};
+            pair<int ,int> last_last = {count_last, nums[i]};
+            long long& total = ret[first_indx + 1];
+            if(m.count(last_first))
+            {
+                total -= (long long)last_first.first *  last_first.second;
+                m.erase(last_first);
+            }
+            if(m3.count(last_first))
+            {
+                m3.erase(last_first);
+            }
+            if(m.count(last_last))
+            {
+                total -= (long long)last_last.first *  last_last.second;
+                m.erase(last_last);
+            }
+            if(m3.count(last_last))
+            {
+                m3.erase(last_last);
+            }
+            last_first.first--;
+            last_last.first++;
+            if(last_first.first > 0)
+                m.insert(last_first);
+            m.insert(last_last);
+            total += (long long)last_first.first *  last_first.second;
+            total += (long long)last_last.first *  last_last.second;
+            while(m.size() > x)
+            {
+                total -= (long long)m.begin()->first *  m.begin()->second;
+                m3.insert(*m.begin());
+                m.erase(m.begin());
+            }
+            while(m.size() < x && !m3.empty())
+            {
+                total += (long long)m3.rbegin()->first *  m3.rbegin()->second;
+                m.insert(*m3.rbegin());
+                m3.erase(*m3.rbegin());
+            }
+            while(!m3.empty())
+            {
+                auto lessx = *m.begin();
+                auto greatre = *m3.rbegin();
+                if(lessx.first < greatre.first || (lessx.first == greatre.first && lessx.second < greatre.second))
+                {
+                    m.insert(greatre);
+                    m.erase(lessx);
+                    m3.insert(lessx);
+                    m3.erase(greatre);
+                    total += (long long)greatre.first *  greatre.second - (long long)lessx.first *  lessx.second;
+                }
+                else break;
+            }
+        }
+        return ret;
+    }
+};
